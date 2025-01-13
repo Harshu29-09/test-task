@@ -4,10 +4,10 @@ import BackButton from '@/components/backButton';
 import Header from '@/components/Header';
 
 async function fetchBlogById(id: string) {
-  const res = await fetch(`http://localhost:3000/api/blogs`);
+  const res = await fetch(`https://6784ab7d1ec630ca33a51b15.mockapi.io/allpost/${id}`);
   if (!res.ok) throw new Error('Failed to fetch blogs');
   const blogs = await res.json();
-  return blogs.find((blog: any) => blog.id === parseInt(id));
+  return blogs
 }
 
 export default async function BlogDetails({ params }: { params: { id: string } }) {

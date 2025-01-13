@@ -3,14 +3,24 @@
 import { useTheme } from "@/components/ThemeProvider";
 import { SlEnergy } from "react-icons/sl";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
+  const [admin, setAdmin] = useState<string | null>(null);
 
   const handleLoginClick = () => {
     router.push("/login");
-  };
+  }; 
+
+  const handleAdminClick = () => {
+    router.push("/admin/dashboard");}
+
+  useEffect(() => {
+    const userId = window.sessionStorage.getItem("userId");
+    setAdmin(userId);
+  }, []);
 
   return (
     <div className="flex space-x-4">
@@ -24,12 +34,19 @@ export default function ThemeToggle() {
       </button>
 
       {/* Login Button */}
-      <button
-        onClick={handleLoginClick}
-        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
+      {!admin ? (
+        <button
+          onClick={handleLoginClick}
+          className="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-blue-600 transition"
+        >
+          Login
+        </button>
+      ):(<button
+        onClick={handleAdminClick}
+        className="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-blue-600 transition"
       >
-        Login
-      </button>
+        Admin Dashboard
+      </button>)}
     </div>
   );
 }

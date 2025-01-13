@@ -2,12 +2,24 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Modal from "./Modal";
+import BlogForm from "./BlogForm";
 
-export default function AdminDashboardClient({ blogs: initialBlogs }: { blogs: any[] }) {
+const AdminDashboardClient = ({ blogs: initialBlogs }: { blogs: any[] }) => {
     const [isAdmin, setIsAdmin] = useState(false);
     const [blogs, setBlogs] = useState(initialBlogs);
     const [editingBlog, setEditingBlog] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [newBlog, setNewBlog] = useState({
+        id: 0,
+        publishedDate: "",
+        title: "",
+        author: "",
+        description: "",
+        image: "",
+    });
+
     const router = useRouter();
 
     useEffect(() => {
@@ -35,13 +47,71 @@ export default function AdminDashboardClient({ blogs: initialBlogs }: { blogs: a
         setEditingBlog(null);
     };
 
-    const handleSaveChanges = () => {
-        setBlogs((prevBlogs) =>
-            prevBlogs.map((blog) =>
-                blog.id === editingBlog.id ? editingBlog : blog
-            )
-        );
-        handleModalClose();
+    const handleSaveChanges = async () => {
+        console.log("handleSaveChanges", editingBlog);
+        try {
+            const response = await fetch(`https://6784ab7d1ec630ca33a51b15.mockapi.io/allpost/${editingBlog.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(editingBlog),
+            });
+
+            if (response.ok) {
+                const updatedBlog = await response.json();
+                console.log("updatedBlog", updatedBlog);    
+                setBlogs((prevBlogs) =>
+                    prevBlogs.map((blog) => (blog.id === updatedBlog.id ? updatedBlog : blog))
+                );
+                handleModalClose();
+            } else {
+                alert("Failed to update the blog. Please try again.");
+            }
+        } catch (error) {
+            console.error("Error updating blog:", error);
+            alert("An error occurred. Please try again.");
+        }
+    };
+
+    const handleCreateModalClose = () => {
+        setIsCreateModalOpen(false);
+        setNewBlog({
+            id: 0,
+            publishedDate: "",
+            title: "",
+            author: "",
+            description: "",
+            image: "",
+        });
+    };
+
+    const handleCreateBlog = async () => {
+        const blogToCreate = {
+            ...newBlog,
+            id: Math.floor(Math.random() * 1000),
+            publishedDate: new Date().toISOString(),
+        };
+        try {
+            const response = await fetch("https://6784ab7d1ec630ca33a51b15.mockapi.io/allpost", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(blogToCreate),
+            });
+
+            if (response.ok) {
+                const createdBlog = await response.json();
+                setBlogs((prevBlogs) => [...prevBlogs, createdBlog]);
+                handleCreateModalClose();
+            } else {
+                alert("Failed to create blog. Please try again.");
+            }
+        } catch (error) {
+            console.error("Error creating blog:", error);
+            alert("An error occurred. Please try again.");
+        }
     };
 
     if (!isAdmin) {
@@ -53,6 +123,20 @@ export default function AdminDashboardClient({ blogs: initialBlogs }: { blogs: a
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                 Admin Dashboard
             </h1>
+<div className="flex justify-between items-center mx-5 mb-4">
+            <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="bg-indigo-500 text-white px-4 py-2 rounded mb-4"
+            >
+                Create Blog
+            </button>
+            <button
+                onClick={() => router.push("/dashboard")}
+                className="bg-indigo-500 text-white px-4 py-2 rounded mb-4"
+            >
+                Dashboard
+            </button>
+</div>
             <table className="min-w-full bg-white dark:bg-gray-800 border">
                 <thead>
                     <tr>
@@ -65,8 +149,8 @@ export default function AdminDashboardClient({ blogs: initialBlogs }: { blogs: a
                 <tbody>
                     {blogs.map((blog) => (
                         <tr key={blog.id}>
-                             <td className="border px-4 py-2">{blog.author}</td>
                             <td className="border px-4 py-2">{blog.title}</td>
+                            <td className="border px-4 py-2">{blog.author}</td>
                             <td className="border px-4 py-2">{blog.publishedDate}</td>
                             <td className="border px-4 py-2">
                                 <button
@@ -87,62 +171,15 @@ export default function AdminDashboardClient({ blogs: initialBlogs }: { blogs: a
                 </tbody>
             </table>
 
-            {/* Edit Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-1/3">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                            Edit Blog
-                        </h2>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Title
-                        </label>
-                        <input
-                            type="text"
-                            value={editingBlog.title}
-                            onChange={(e) =>
-                                setEditingBlog({ ...editingBlog, title: e.target.value })
-                            }
-                            className="w-full border border-gray-300 rounded px-2 py-1 mb-4"
-                        />
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Author
-                        </label>
-                        <input
-                            type="text"
-                            value={editingBlog.author}
-                            onChange={(e) =>
-                                setEditingBlog({ ...editingBlog, author: e.target.value })
-                            }
-                            className="w-full border border-gray-300 rounded px-2 py-1 mb-4"
-                        />
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Description
-                        </label>
-                        <textarea
-                            value={editingBlog.description}
-                            onChange={(e) =>
-                                setEditingBlog({ ...editingBlog, description: e.target.value })
-                            }
-                            className="w-full border border-gray-300 rounded px-2 py-1 mb-4"
-                        ></textarea>
-                        <div className="flex justify-end">
-                            <button
-                                onClick={handleModalClose}
-                                className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSaveChanges}
-                                className="bg-indigo-500 text-white px-4 py-2 rounded"
-                            >
-                                Save Changes
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <Modal isOpen={isModalOpen} onClose={handleModalClose}>
+                <BlogForm blog={editingBlog} onChange={(e) => setEditingBlog({ ...editingBlog, [e.target.name]: e.target.value })} onSave={handleSaveChanges} />
+            </Modal>
+
+            <Modal isOpen={isCreateModalOpen} onClose={handleCreateModalClose}>
+                <BlogForm blog={newBlog} onChange={(e) => setNewBlog({ ...newBlog, [e.target.name]: e.target.value })} onSave={handleCreateBlog} />
+            </Modal>
         </div>
     );
-}
+};
+
+export default AdminDashboardClient;
